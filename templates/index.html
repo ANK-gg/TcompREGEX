@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Minicompilador: Placas Peruanas</title>
+    <script src="https://cdn.jsdelivr.net/npm/viz.js@2.1.2/viz.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/viz.js@2.1.2/full.render.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #f0f2f5; color: #1a2a3a; }
+        h1 { color: #1e466e; border-left: 5px solid #27ae60; padding-left: 15px; }
+        .descripcion { background: #e9ecef; padding: 15px; border-radius: 10px; margin-bottom: 25px; }
+        .contenedor { display: flex; gap: 30px; flex-wrap: wrap; margin: 30px 0; }
+        .columna-izquierda { flex: 1; background: white; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); padding: 25px; min-width: 280px; height: fit-content;}
+        .analisis-container { flex: 2; background: white; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); padding: 25px; min-width: 550px; }
+        .campo { margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; }
+        input[type="file"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; }
+        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight:bold; font-size: 16px;}
+        button:hover { background: #1e8449; }
+        .ejemplo-pre { background: #f4f7f6; padding: 12px; border-radius: 8px; border-left: 4px solid #27ae60; font-family: monospace; white-space: pre; }
+        .tabla-tokens-general { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 10px; margin-bottom: 30px;}
+        .tabla-tokens-general thead tr { background: #1e466e; color: white; }
+        .tabla-tokens-general th, .tabla-tokens-general td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e0e6ed; }
+        .token-name { font-family: monospace; font-weight: bold; color: #1e466e; }
+        .regex-celda { font-family: monospace; font-size: 0.78rem; background: #eef7ff; padding: 3px 6px; border-radius: 4px; }
+        .ejemplo-celda { font-family: monospace; color: #27ae60; font-weight: bold; }
+        .resultado-item { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .valido { background-color: #ebf8f2; border-left: 5px solid #27ae60; }
+        .invalido { background-color: #fdecea; border-left: 5px solid #c0392b; }
+        .lexema-tag { display: inline-block; background: #34495e; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 5px; font-family: monospace;}
+    </style>
+</head>
+<body>
+
+<h1>🚗 Minicompilador: Validación de Placas Peruanas</h1>
+<div class="descripcion">
+    Este sistema evalúa de forma determinista si una secuencia pertenece al lenguaje formal <strong>Lplaca</strong> mediante análisis léxico y sintáctico.
+</div>
+
+<div class="contenedor">
+    <div class="columna-izquierda">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="campo">
+                <label>Cargar archivo .txt con formato clave-valor</label>
+               <input type="file" name="archivo" accept="text/plain, .txt" required>
+            </div>
+            <button type="submit">Compilar y Analizar</button>
+        </form>
+        <br>
+        <strong>Formato de prueba sugerido (.txt):</strong>
+<pre class="ejemplo-pre">
+Nombre de dueño: Hector Sacsara
+Tipo de vehiculo: Automovil particular
+Modelo de auto: Toyota Yaris
+Matricula: ABC-123
+Fecha: 2026-10-22</pre>
+    </div>
+
+    <div class="analisis-container">
+        <h2>📌 Catálogo de Tokens Reconocidos</h2>
+        <table class="tabla-tokens-general">
+            <thead>
+                <tr>
+                    <th>Token</th>
+                    <th>Descripción</th>
+                    <th>Ejemplo</th>
+                    <th>Expresión Regular</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="token-name">&lt;TOKEN_SERIE&gt;</td>
+                    <td>Identificación de Región y Serie</td>
+                    <td class="ejemplo-celda">ABC</td>
+                    <td><span class="regex-celda">^[A-Z]{3}$</span></td>
+                </tr>
+                <tr>
+                    <td class="token-name">&lt;TOKEN_SEP&gt;</td>
+                    <td>Delimitador Estructural (opcional)</td>
+                    <td class="ejemplo-celda">-</td>
+                    <td><span class="regex-celda">-</span></td>
+                </tr>
+                <tr>
+                    <td class="token-name">&lt;TOKEN_CORR&gt;</td>
+                    <td>Correlativo Numérico</td>
+                    <td class="ejemplo-celda">123</td>
+                    <td><span class="regex-celda">^[0-9]{3}$</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Resultados dinámicos de Flask limpios -->
+        {% if resultados %}
+            <h2>📊 Resultados del Análisis Léxico</h2>
+            {% for res in resultados %}
+                <div class="resultado-item {% if res.valido %}valido{% else %}invalido{% endif %}">
+                    <p style="margin: 0; font-family: monospace; font-size: 1.1em;">
+                        <strong>Token detectado:</strong> [{{ res.clave }}] 
+                    </p>
+                    <p style="margin: 8px 0;"><strong>Lexema ingresado:</strong> {{ res.valor }}</p>
+                    <p style="margin: 0;"><strong>Estado:</strong> 
+                        {% if res.valido %}
+                            <span style="color: #27ae60;">Aceptado ({{ res.mensaje }})</span>
+                        {% else %}
+                            <span style="color: #c0392b;">Rechazado ({{ res.mensaje }})</span>
+                        {% endif %}
+                    </p>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
